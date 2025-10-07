@@ -1,0 +1,5 @@
+[
+  { "id": "s1", "name": "Alex", "hasPaid": true, "makeupLessons": 1 },
+  { "id": "s2", "name": "Sara", "hasPaid": false, "makeupLessons": 0 },
+  { "id": "s3", "name": "Eli", "hasPaid": true, "makeupLessons": 2 }
+]
