@@ -1,15 +1,29 @@
-import { NextResponse } from "next/server";
+// app/api/students/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { kv, keys } from "../_kv";
 
-export async function GET() {
-  const data = (await kv.get(keys.students)) as any[] | null;
-  return NextResponse.json(data ?? []);
+type Student = {
+  id: string;
+  name: string;
+  [key: string]: unknown; // allow extra fields safely
+};
+
+async function getStudents(): Promise<Student[]> {
+  const data = await kv.get(keys.students);
+  return Array.isArray(data) ? (data as Student[]) : [];
 }
 
-export async function POST(req: Request) {
-  const s = await req.json();
-  const arr = ((await kv.get(keys.students)) as any[] | null) ?? [];
-  arr.push(s);
-  await kv.set(keys.students, arr);
-  return NextResponse.json(s, { status: 201 });
+export async function GET(_request: NextRequest) {
+  const students = await getStudents();
+  return NextResponse.json(students);
+}
+
+export async function POST(request: NextRequest) {
+  const student = (await request.json()) as Student;
+  const students = await getStudents();
+
+  students.push(student);
+  await kv.set(keys.students, students);
+
+  return NextResponse.json(student, { status: 201 });
 }
