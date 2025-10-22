@@ -11,7 +11,6 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Switch } from './ui/switch';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 interface AddLessonDialogProps {
@@ -19,9 +18,9 @@ interface AddLessonDialogProps {
   onClose: () => void;
   onAdd: (studentId: string, sessionNumber: number, isMakeup: boolean) => void;
   students: Student[];
-  timeSlot: string;
+  timeSlot: string; // assumed "HH:mm" or whatever you use now
   teacher: Teacher | null;
-  date: string;
+  date: string;     // "YYYY-MM-DD"
 }
 
 export function AddLessonDialog({
@@ -36,6 +35,7 @@ export function AddLessonDialog({
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [sessionNumber, setSessionNumber] = useState<number>(1);
   const [lessonType, setLessonType] = useState<'regular' | 'makeup'>('regular');
+  const [saving, setSaving] = useState(false);
 
   const formatTime = (timeStr: string) => {
     const [hours, minutes] = timeStr.split(':');
@@ -54,16 +54,6 @@ export function AddLessonDialog({
     });
   };
 
-  const handleAdd = () => {
-    if (selectedStudentId) {
-      onAdd(selectedStudentId, sessionNumber, lessonType === 'makeup');
-      setSelectedStudentId('');
-      setSessionNumber(1);
-      setLessonType('regular');
-      onClose();
-    }
-  };
-
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   const handleStudentChange = (studentId: string) => {
@@ -75,13 +65,57 @@ export function AddLessonDialog({
     }
   };
 
+  // ⬇️ call server to create 1 or many lessons depending on "regular"/"makeup"
+  const handleAdd = async () => {
+    if (!selectedStudentId || !teacher?.id) return;
+
+    setSaving(true);
+    try {
+      // your server POST expects: { lesson, repeatWeekly, weeks }
+      const lesson = {
+        id: crypto.randomUUID(),
+        teacherId: teacher.id,
+        studentId: selectedStudentId,
+        date,             // e.g. "2025-10-22"
+        start: timeSlot,  // keep your existing slot format
+        // end: optional — include if your API uses it
+        sessionNumber,    // keep extra fields if you want them in storage
+        type: lessonType, // "regular" | "makeup"
+      };
+
+      await fetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lesson,
+          repeatWeekly: lessonType === 'regular', // <-- weekly series if Regular
+          weeks: 12,                              // adjust as you like
+        }),
+      });
+
+      // keep your old local behavior
+      onAdd(selectedStudentId, sessionNumber, lessonType === 'makeup');
+
+      // reset & close
+      setSelectedStudentId('');
+      setSessionNumber(1);
+      setLessonType('regular');
+      onClose();
+    } catch (err) {
+      console.error('Failed to add lesson', err);
+      // optionally show a toast here
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Lesson</DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Teacher</Label>
@@ -146,7 +180,10 @@ export function AddLessonDialog({
           {selectedStudent && (
             <div className="grid gap-3">
               <Label>Lesson Type</Label>
-              <RadioGroup value={lessonType} onValueChange={(value: string) => setLessonType(value as 'regular' | 'makeup')}>
+              <RadioGroup
+                value={lessonType}
+                onValueChange={(value: string) => setLessonType(value as 'regular' | 'makeup')}
+              >
                 <div className="flex items-start space-x-3 rounded-lg border border-border p-3">
                   <RadioGroupItem value="regular" id="regular" className="mt-0.5" />
                   <div className="grid gap-1.5 flex-1">
@@ -154,7 +191,7 @@ export function AddLessonDialog({
                       Regular Lesson
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      This is a permanent schedule change - the student will have their lesson at this time every week
+                      This is a permanent schedule change — the student will have their lesson at this time every week.
                     </p>
                   </div>
                 </div>
@@ -165,7 +202,7 @@ export function AddLessonDialog({
                       Makeup Lesson (One-Time)
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      This is only for this week - next week the student returns to their regular time
+                      This is only for this week — next week the student returns to their regular time.
                     </p>
                   </div>
                 </div>
@@ -175,11 +212,11 @@ export function AddLessonDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleAdd} disabled={!selectedStudentId}>
-            Add Lesson
+          <Button onClick={handleAdd} disabled={!selectedStudentId || !teacher?.id || saving}>
+            {saving ? 'Adding…' : 'Add Lesson'}
           </Button>
         </DialogFooter>
       </DialogContent>
