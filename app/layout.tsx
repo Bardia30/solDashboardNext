@@ -1,9 +1,6 @@
-// app/layout.tsx
-"use client";                         // 👈 this makes the file a client component
-
 import "./globals.css";
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
+import Providers from "./providers";
 import { Geist, Geist_Mono } from "next/font/google";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -15,22 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  if (!pk) console.error("Missing NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in production");
-
   return (
-    <ClerkProvider
-      publishableKey={pk}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignInUrl="/"
-      afterSignUpUrl="/"
-    >
-      <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }
