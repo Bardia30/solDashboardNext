@@ -18,7 +18,7 @@ interface AddLessonDialogProps {
   onClose: () => void;
   onAdd: (studentId: string, sessionNumber: number, isMakeup: boolean) => void;
   students: Student[];
-  timeSlot: string; // assumed "HH:mm" or whatever you use now
+  timeSlot: string; // "HH:mm"
   teacher: Teacher | null;
   date: string;     // "YYYY-MM-DD"
 }
@@ -45,55 +45,50 @@ export function AddLessonDialog({
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   const handleStudentChange = (studentId: string) => {
     setSelectedStudentId(studentId);
     const student = students.find((s) => s.id === studentId);
-    if (student) {
-      // Default to their next session
-      setSessionNumber(student.currentSession);
-    }
+    if (student) setSessionNumber(student.currentSession);
   };
 
-  // ⬇️ call server to create 1 or many lessons depending on "regular"/"makeup"
   const handleAdd = async () => {
     if (!selectedStudentId || !teacher?.id) return;
 
     setSaving(true);
     try {
-      // your server POST expects: { lesson, repeatWeekly, weeks }
+      // ✅ Send `timeSlot`, not `start`
       const lesson = {
         id: crypto.randomUUID(),
         teacherId: teacher.id,
         studentId: selectedStudentId,
-        date,             // e.g. "2025-10-22"
-        start: timeSlot,  // keep your existing slot format
-        // end: optional — include if your API uses it
-        sessionNumber,    // keep extra fields if you want them in storage
-        type: lessonType, // "regular" | "makeup"
+        date,                 // "YYYY-MM-DD"
+        timeSlot,             // ✅ matches API expectation
+        sessionNumber,
+        type: lessonType,     // "regular" | "makeup"
       };
 
       await fetch('/api/lessons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store', // avoid stale responses right after creation
         body: JSON.stringify({
           lesson,
-          repeatWeekly: lessonType === 'regular', // <-- weekly series if Regular
-          weeks: 12,                              // adjust as you like
+          repeatWeekly: lessonType === 'regular',
+          weeks: 12,
         }),
       });
 
-      // keep your old local behavior
+      // keep your existing local update
       onAdd(selectedStudentId, sessionNumber, lessonType === 'makeup');
 
       // reset & close
@@ -103,7 +98,6 @@ export function AddLessonDialog({
       onClose();
     } catch (err) {
       console.error('Failed to add lesson', err);
-      // optionally show a toast here
     } finally {
       setSaving(false);
     }
