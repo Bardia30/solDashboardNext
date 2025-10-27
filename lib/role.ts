@@ -24,7 +24,7 @@ export function useRole() {
   const teacherMap: Record<string, string> = {
     "bardia@solschoolofmusic.ca": "bardia",
     "bardiadehbasti@gmail.com": "bardia",
-    "soheil@solschoolofmusic.ca": "soheil",
+    "sdehbasti@gmail.com": "soheil",
     "haleh@solschoolofmusic.ca": "haleh",
     "negin@solschoolofmusic.ca": "negin",
     "masih@solschoolofmusic.ca": "masih",
