@@ -22,12 +22,17 @@ export function useRole() {
   const isAdmin = allEmails.some((e) => ADMIN_EMAILS.has(e));
 
   const teacherMap: Record<string, string> = {
-    "bardia@solschoolofmusic.ca": "bardia",
     "bardiadehbasti@gmail.com": "bardia",
     "sdehbasti@gmail.com": "soheil",
-    "haleh@solschoolofmusic.ca": "haleh",
+    "haleharami2015@gmail.com": "haleh",
     "negin@solschoolofmusic.ca": "negin",
-    "masih@solschoolofmusic.ca": "masih",
+    "masih.tahvildari@gmail.com": "masih",
+    "parnianaghaiani95@gmail.com": "parnian",
+    "mehrdadamiri20@gmail.com": "mehrdad",
+    "jessica.peng823@outlook.com": "jessica",
+    "ricgalvez92@gmail.com": "ric",
+    "elahehfotoohi4770@gmail.com": "elaheh",
+    "bamdadmaleki@gmail.com": "bamdad",
   };
 
   const userSlug =
